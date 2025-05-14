@@ -1,0 +1,96 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+state CLOSED: 假想的状态，TCP 未连接或者连接已经完全释放的状态。该转台无法通过工具看到\n 转换状态：\n 1. 主动切换 \n 2. 被动切换
+state LISTEN: 监听状态，TCP 监听端口，等待连接请求\n 通常为服务端 `bind` 或者 `listen` 系统调用\n netstat 可以查看
+state SYN_SENT: 发送 SYN ，等待 ACK\n 会开启一个定时器，如果过时间会重发 SYN
+state SYN_RCVD: 接收到 SYN，回复 SYN+ACK，等待对方 ACK
+state ESTABLISHED: SYN 或者 SYN_RCVD 接收到 ACK 之后却换，成功建立连接
+state FIN_WAIT_1: 主动关闭，发送 FIN，等待 ACK\n 状态切换：\n 1. 收到 ACK 进入 FIN_WAIT_2 \n 收到 FIN 回复 ACK, 进入 CLOSED \n3.收到 FIN+ACK, 回复 ACK 进入 进入 TIME_WAIT
+state FIN_WAIT_2: FIN_WAIT_1 收到 ACK, 主动关闭的 FIN 包已经被确认，等待被动关闭的发送 FIN
+state CLOSING: 在同时关闭时候出现
+state TIME_WAIT: 收到被动关闭发送的 FIN, 发送 ACK ，开启 2MSL 定时器，定时器到期进入 CLOSED
+state CLOSE_WAIT: 一方关闭连接时，使用系统调用调用关闭 TCP
+state LAST_ACK: 被关闭等待最后 ACK
+
+CLOSED -[dotted]-> LISTEN
+note on link
+    A, B 同时监听
+end note
+LISTEN -[dotted]-> SYN_SENT
+note on link
+    A, B 发送 SYN
+end note
+SYN_SENT -[dotted]-> CLOSED
+SYN_SENT -[dotted]-> SYN_RCVD
+note on link
+    A,B 收到 SYN, 发送 SYN+ACK
+end note
+SYN_SENT -[dotted]-> FIN_WAIT_1
+SYN_RCVD  -[dotted]-> ESTABLISHED
+note  on link
+    A,B 收到 SYN+ACK
+end note
+ESTABLISHED  -[dotted]-> FIN_WAIT_1
+note on link
+    A,B 发送 FIN
+end note
+FIN_WAIT_1 -[dotted]-> CLOSING
+note  on link
+    A,B 收到 FIN, 发送 ACK
+end note
+CLOSING  -[dotted]-> TIME_WAIT
+note  on link
+    A,B 收到 ACK
+end note
+FIN_WAIT_1 -[dotted]-> TIME_WAIT
+TIME_WAIT --> CLOSED
+
+
+CLOSED -[dashed]-> LISTEN
+note on link
+    (1) B 被动打开启动监听
+end note
+LISTEN -[dashed]-> SYN_RCVD
+note on link
+    (3) B 收到 SYN, 发送 SYN+ACK
+end note
+SYN_RCVD -[dashed]-> ESTABLISHED
+note on link
+    (5) B 收到 ACK
+end note
+ESTABLISHED -[dashed]-> CLOSE_WAIT
+note on link
+    (二) B 收到 FIN，发送 ACK
+end note
+CLOSE_WAIT -[dashed]-> LAST_ACK
+note on link
+    (四) B 关闭，发送 FIN
+end note
+LAST_ACK -[dashed]-> CLOSED
+note on link
+    B 收到 ACK
+end note
+
+
+CLOSED --> SYN_SENT
+note on link
+    (2) A 主动打开连接,  发送 SYN
+end note
+SYN_SENT --> ESTABLISHED
+note on link
+    (4) A 收到 SYN+ACK, 发送 ACK
+end note
+ESTABLISHED --> FIN_WAIT_1
+note on link
+    (一) A 主动关闭 发送 FIN
+end note
+FIN_WAIT_1 --> FIN_WAIT_2
+note on link
+    (三) A 收到 ACK
+end note
+FIN_WAIT_2  --> TIME_WAIT
+note on link
+    (五) A 收到 FIN, 确认 ACK
+end note
+@enduml
