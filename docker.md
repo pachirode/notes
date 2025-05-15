@@ -1,5 +1,107 @@
 # VM
 
+##### 虚拟机网络配置
+新安装完成的 `Centos7` 无法访问网络
+```bash
+vim /etc/sysconfig/network-scripts/ifcfg-ens33
+ONBOOT=yes
+service network restart
+```
+修改为国内镜像源
+```bash
+cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
+vim /etc/yum.repos.d/CentOS-Base.repo
+
+""""
+# CentOS-Base.repo
+#
+# The mirror system uses the connecting IP address of the client and the
+# update status of each mirror to pick mirrors that are updated to and
+# geographically close to the client.  You should use this for CentOS updates
+# unless you are manually picking other mirrors.
+#
+# If the mirrorlist= does not work for you, as a fall back you can try the 
+# remarked out baseurl= line instead.
+#
+#
+ 
+[base]
+name=CentOS-$releasever - Base - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/centos/$releasever/os/$basearch/
+        http://mirrors.aliyuncs.com/centos/$releasever/os/$basearch/
+        http://mirrors.cloud.aliyuncs.com/centos/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+ 
+#released updates 
+[updates]
+name=CentOS-$releasever - Updates - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/centos/$releasever/updates/$basearch/
+        http://mirrors.aliyuncs.com/centos/$releasever/updates/$basearch/
+        http://mirrors.cloud.aliyuncs.com/centos/$releasever/updates/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+ 
+#additional packages that may be useful
+[extras]
+name=CentOS-$releasever - Extras - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/centos/$releasever/extras/$basearch/
+        http://mirrors.aliyuncs.com/centos/$releasever/extras/$basearch/
+        http://mirrors.cloud.aliyuncs.com/centos/$releasever/extras/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+ 
+#additional packages that extend functionality of existing packages
+[centosplus]
+name=CentOS-$releasever - Plus - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/centos/$releasever/centosplus/$basearch/
+        http://mirrors.aliyuncs.com/centos/$releasever/centosplus/$basearch/
+        http://mirrors.cloud.aliyuncs.com/centos/$releasever/centosplus/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+ 
+#contrib - packages by Centos Users
+[contrib]
+name=CentOS-$releasever - Contrib - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/centos/$releasever/contrib/$basearch/
+        http://mirrors.aliyuncs.com/centos/$releasever/contrib/$basearch/
+        http://mirrors.cloud.aliyuncs.com/centos/$releasever/contrib/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+
+""""
+yum clean all
+yum makecache
+
+```
+安装 miniconda
+```bash
+yum -y install bzip2
+wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda-3.10.1-Linux-x86_64.sh
+bash Miniconda-3.10.1-Linux-x86_64.sh
+
+conda info # 查看镜像源
+conda config --remove channels http://mirrors.aliyun.com/anaconda/pkgs/main --force
+conda config --add channels http://mirrors.aliyun.com/anaconda/cloud
+conda config --set show_channel_urls yes
+```
+
+安装 docker & docker compose
+```bash
+curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+systemctl start docker #启动docker
+systemctl enable docker
+
+yum install -y  docker-compose-plugin
+```
+
 ##### 虚拟机扩容
 
 1. 关闭虚拟机
@@ -27,7 +129,7 @@
 ### Centos 7
 
 ##### 安装
-1. 添加 `docker` 镜像源 `sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo`
+1. 添加 `docker` 镜像源 `sudo yum-config-manager --remove-repo https://download.docker.com/linux/centos/docker-ce.repo`
 2. `sudo yum install docker-ce docker-ce-cli containerd.io`
 
 > 新版的 `docker` 需要包装系统版本（uname -r > 3.10）

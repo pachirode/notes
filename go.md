@@ -1,4 +1,17 @@
 # GO
+### Linux 上安装环境
+```bash
+yum install -y wget
+wget https://dl.google.com/go/go1.24.0.linux-amd64.tar.gz
+tar -zxvf go1.24.0.linux-amd64.tar.gz
+vim .bashrc
+    export GOROOT=/root/go
+    export GOPATH=/root/projects/go
+    export PATH=$PATH:$GOROOT/bin:$GPPATH/bin
+source ~/.bashrc
+go env -w GOPROXY=https://goproxy.io,direct
+go env -w GO111MODULE=on
+```
 
 ### 配置
 ```bash
@@ -50,9 +63,16 @@ func main() {
         - `float32/64`
         - `complex64/128`
         - `byte`
+          - 没有专门的字符类型，如果要存储当个字符，一般使用 `byte` 来保存
+          - 字符串是由字节组成
+          - 使用 `'`
+          - `uint8`
         - `rune`
+          - 和字符处理相关 
+          - `uint32`
         - `uint`
         - `int`
+          - 动态类型，取决于机器本身是多少位
         - `uintptr`
     - 字符串类型
     - 派生类
@@ -66,10 +86,16 @@ func main() {
         - `Map`
 - 变量
   ```go
-    var indentifier1, indentifier2 type // 一次声明多个变量
-    var v_name, v_type  // 指定变量类型，如果没有初始化，则变量会有默认值
     var v_name = value // 可以根据值自行判断变量类型
-    v_name := value // 如果变量已经使用 `var` 声明过了，再使用 `:=` 声明，就会产生编译错误
+    v_name := value // 如果变量已经使用 `var` 声明过了，再使用 `:=` 声明，就会产生编译错误(如果是多个变量同时声明，需要保证至少一个是新变量)
+  
+    // 多变量同时声明
+    var name1, name2, name3 type
+    var name1, name2, name3 = v1, v2, v3
+    var (
+    name string
+    age int
+    )
   ```
 - 值类型和引用类型
     - 值类型直接保存数据，赋值操作实际上是复制了这些值
@@ -79,13 +105,17 @@ func main() {
   > 局部变量赋值必须使用；全局变量允许声明但是不使用
 - 常量
     - 程序运行过程中不会被修改的量。
+    - 常量可以作为枚举，常量组
+    - 常量组中如果不指定类型和初始化值，则与上一行非空常量右值相同
 
 ```go
 package main
 
 const (
-	Unknow = 0
-	Male   = 1
+  x uint16 = 16
+  y
+  s = "abc"
+  z
 )
 
 func main() {
@@ -95,8 +125,11 @@ func main() {
 ```
 
 - `iota`
-    - 特殊变量，一个可以被编译器修改的常量
+    - 特殊常量，一个可以被编译器修改的常量
     - 通常用于创建一组相关的常量
+    - 如果中断 `iota` 自增必须显示恢复，且后续自增值按照行序自增
+    - 常量不会分配存储空间，因此无法像变量一样通过内存取址来取值
+    - 每次 `const` 出现都会让 `iota` 初始化为 0
 
 ```go
 package main
@@ -128,6 +161,9 @@ func main() {
 - 循环语句
 - 函数
 - 数组
+  - 数组是值类型，长度不一样的数组类型不是同一个类型
+  - 传递参数的时候不同长度数组无法传参
+  - 数组调用的时候是值传递
 
 ```go
 var arrayName [size]dateType
@@ -194,7 +230,8 @@ slice := make([]type, len) // 创建切片，capacity 为可选参数
 number1 := make([]int, len(numbers), cap(numbers) * 2)
 copy(number1, numbers)
 ```
-> 切片和数组的区别：1. 数组大小（固定/动态）2.内存（数组定义的时候分配固定的内存，大概率在栈上。切片实际上一个结构体，底层数组可以在堆上）3. 数组传参时候会复制整个数组，切片传递的为引用 
+> 切片和数组的区别：1. 数组大小（固定/动态）2.内存（数组定义的时候分配固定的内存，大概率在栈上。切片实际上一个结构体，底层数组可以在堆上）3. 数组传参时候会复制整个数组，切片传递的为引用
+> 切片类似 `python` 中的 `list`
 
 - `range`
   - 用于 `for` 循环中迭代数组
@@ -236,8 +273,15 @@ delete(m, "apple")
 > `map` 会自动扩容
 
 - 类型转换
+  不支持变量间的隐式类型转换，常量和变量之间支持类型转换
+  - 简单的转换 
   - `strconv`
 ```go
+var a int = 1
+var b float = 1.0
+a = b // 报错
+var a int = 1.0 // 可以
+
 type_name(expression)
 
 var a int = 10
@@ -471,3 +515,6 @@ func main() {
     }
 
   ```
+  
+### 模块
+模块下不能有多个 `main`, 会认为是函数重复，可以将他们放到不同的文件夹下面解决这个问题
