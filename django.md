@@ -284,3 +284,32 @@ urlpatterns = [
     ...,
 ]
 ```
+
+### 拆解配置文件
+配置文件写在一个大文件下面很难维护，因此我们会将 `setting.py` 拆分为一个 `package`, 将 `setting.py` 移到 `settings` 文件夹下并改为 `base.py`
+```python
+# settings/__init__.py
+from .base import *
+```
+
+### `SimpleUI` 使用
+```bash
+pip install django-simpleui -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+```python
+INSTALLED_APPS = [
+    'simpleui' # 添加后台模板
+]
+```
+#####  静态资源无法访问
+如果关闭 debug 模式之后，会出现静态资源无法访问；需要克隆静态文件到根目录
+```python
+# 第一种解决办法，再配置里面指定
+STATICFILES_DIRS = [
+     os.path.join(BASE_DIR, "static"),
+ ]
+
+# 第二种解决办法，克隆静态资源到项目目录下面，然后交给 nginx 处理
+python manage.py collectstatic
+STATIC_ROOT = os.path.join(BASE_DIR, "static") # 如果拷贝失败，需要先指定静态文件目录
+```

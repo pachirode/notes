@@ -1,5 +1,11 @@
 # GO
 
+### 配置
+```bash
+go env -w GOPROXY=https://goproxy.io,direct
+```
+
+
 ```go
 package main // 包声明, `pange main` 表明是一个独立执行的程序
 
