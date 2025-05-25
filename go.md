@@ -152,16 +152,72 @@ func main() {
 ```
 
 - 运算符
-- 条件语句
+  - 算术运算符
+  - 关系运算符
+  - 逻辑运算符
+  - 位运算符
+  - 赋值运算符
+  - 其他运算符
+    - `&` 返回变量存储地址
+    - `*` 指针变量
+- 输入输出格式化
+  - `%v`
+    - 缺省格式
+  - `%#v`
+    - `go` 语法打印
+  - `%T`
+    - 类型打印
+  - `%c`
+    - 字符
+  - `%q`
+    - 有引号的字符
+  - `%U`
+    - `Unicode`
+  - `%#U`
+  - `%e`
+    - 科学技术
+  - `%f`
+    - 十进制小数
+  - `%s`
+    - 字符串
+- 条件语句和循环语句
     - `if else`
+    - `for`
+    - `goto`
+      - 无条件的转移到过程中指定的行，会导致程序流程混乱，一般不使用
+      - 跳出多层循环
+      - 集中处理错误
     - `swith`
+      - 基于不同条件执行不同动作
     - `select`
         - 只能用于通道操作，每个 `case` 必须是通道
         - 如果多个通道都准备好了，会随机选择一个通道执行
-- 循环语句
+    ```go
+    func main () {
+      if a < 20 {}
+      if num:= 10; num < 20 {} // 可以将返回值和判断放到一行里面处理，返回值的作用范围被限制在 `if` 块中
+  
+      for init; condition; post { } 
+      for condition { }
+      for { }
+  
+      goto label1
+      label1: statement
+  
+      switch var1 {
+        case val1, other:
+          ...
+        case val2:
+          ...
+        default:
+          ...
+      }
+    }
+    ```
 - 函数
 - 数组
-  - 数组是值类型，长度不一样的数组类型不是同一个类型
+  - 数组是值类型，赋值会拷贝数组
+  - 长度不一样的数组类型不是同一个类型
   - 传递参数的时候不同长度数组无法传参
   - 数组调用的时候是值传递
 
@@ -198,6 +254,16 @@ fmt.Println("变量值： ", *ip)
 
 ```
 - 结构体
+  - 结构体之间可以相互赋值，是浅拷贝，拷贝的是指针地址
+  - 内嵌结构体不提供名称，直接继承其内部所有的字段和方法
+  - 如果内嵌结构体和外部结构体字段系统，先要使用内嵌结构体需要外部调用申明内嵌结构体
+  - 结构体标签
+    - 附属于字段的字符串，辅助序列化
+  - 结构体方法
+    - 首字母大写公开方法
+    - 首字母小写内部方法，只有同包可以使用
+  - 结构体指针方法
+    - 值传递涉及到拷贝，无法实际影响外部存储的数据
 ```go
 type struct_variable_type struct {
     member definition
@@ -213,18 +279,68 @@ type Book struct {
 }
 
 func main() {
-fmt.Println(Book{"Go Programming", "XYZ", "Go Programming Tutorial", 6495407})
+Book{
+title: "Go"
+author: "XYZ"
+subject: "Go Programming"
+book_id: 6495407,
+}
+Book{"Go Programming", "XYZ", "Go Programming Tutorial", 6495407}
+
+var c Book = Book{} // 零值结构体会占用内存，只不过里面的每个字段都是零值
+var c Book
+var c  *Book = new(Book) // 返回的是指针类型，这个零值只会占用一个指针
+
+
+type Teacher struct {
+	name string
+	age int
+	title string
+}
+
+
+type Course struct {
+	Teacher // 内嵌结构体不提供名称，直接继承其内部所有的字段和方法；如果内嵌结构体和外部结构体字段系统，先要使用内嵌结构体需要外部调用申明内嵌结构体
+	price int
+	name string
+	url string
+}
+
+type Info struct {
+    Name string
+    Age  int `json:"age,omitempty"`
+    Sex  string
+}
+
+func (i Info) GetInfo() float64 {
+ return ""
+}
+
+func (i Info) expand() {
+  i.Age *= 2
+}
+
 }
 ```
 - 切片
-  - 对数组的抽象，数组的长度不可改变，切片相当于 动态数组，可以追加元素
+  - 切片相当于 动态数组，可以追加元素
   - `len()` 当前长度
   - `cap()` 容量
   - `append()`
+    - `go` 不允许调用 `append` 不使用返回值
+    - 本质上是往底层数组里面添加元素，但是底层数组的长度是固定的
   - `copy()`
 ```go
+type slice struct {
+  array unsafe.Pointer  // 底层数组的地址
+  len int // 长度
+  cap int // 容量
+}
+
 var identifier []type // 声明一个未指定大小的切片
 slice := make([]type, len) // 创建切片，capacity 为可选参数
+course := [5]int{1, 2, 3, 4, 5}
+subCourse := course[1:2] // 通过对数组操作返回
 
 // 切片扩容
 number1 := make([]int, len(numbers), cap(numbers) * 2)
@@ -254,6 +370,7 @@ for i := range ch {
 ```
 - `Map`
   - 无序键值对集合
+  - `key` 类型需要支持 `==` `or` `!=`
   - 获取 `Map` 值时，如果键不存在，返回该类型的零值
   - 引用类型
 ```go
@@ -275,7 +392,18 @@ delete(m, "apple")
 - 类型转换
   不支持变量间的隐式类型转换，常量和变量之间支持类型转换
   - 简单的转换 
+    - 无法跨大类型转换
   - `strconv`
+    - 整数和字符串转换
+      - `Itoa`
+      - `Atoi`
+    - `Parse` 函数
+      - `ParseBool`
+      - `ParseFloat`
+      - `ParseInt`
+      - `ParseUint`
+    - `Format`
+      - 将给定类型的格式化字符串
 ```go
 var a int = 1
 var b float = 1.0
@@ -355,6 +483,14 @@ func main() {
     - 接口变量存储的具体值
   - 错误处理
     - 通过内置的错误接口提供了简单的错误处理机制；错误处理使用显式返回错误方式
+    - 当程序运行时，如果遇到空指针或者显式的调用 `panic`，会先触发 `panic` 函数，然后调用延迟函数。继续传递 `panic` ... 如果一路在延迟函数中没有调用 `recover`，则会到达该协程的起点，该协程结束。终止其他协程
+    - 错误和异常就是 `error` 和 `panic` 的不同，错误和异常是可以相互转换的
+    - 处理方式
+      - 没有失败时不使用 `error`
+      - `error` 应该放在返回值类型列表的最后一个
+      - 错误值统一定义
+      - 错误逐级传递，每一层都添加日志
+      - 错误处理使用 `defer`
     - `error`接口
       - 标准错误表示
       - `error.Is` 检查是否为特定错误
@@ -389,13 +525,18 @@ func main() {
       ```
     - 自定义错误
       - 标准库或者自定义方式创建错误
-    - `panic` 和 `recover`
-      - 处理不可恢复的严重的错误
-      - `panic` 用于触发错误（用于程序无法继续运行时），`recover` 用于捕获错误
-    - `fmt` 错误格式化
-      - `%v` 默认格式
-      - `%+v` 如果支持，显示详细的错误信息
-      - `%s` 作为字符串输出
+    - `panic` `recover` `defer`
+      - 错误
+        - 可能出错的地方出错，可以预料到
+      - 异常
+        - 不应该出错的地方出错
+      - `panic` `recover` 触发和终止异常处理流程
+      - `defer` 延迟执行 `defer` 的函数
+        - 多条 `defer` 语句执行顺序与声明顺序相反
+      - `fmt` 错误格式化
+        - `%v` 默认格式
+        - `%+v` 如果支持，显示详细的错误信息
+        - `%s` 作为字符串输出
 
 - 并发
   - 使用 `goroutines` 和 `channels` 来实现
