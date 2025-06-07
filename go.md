@@ -32,11 +32,40 @@ go env -w GOPROXY=https://goproxy.io,direct
 go env -w GO111MODULE=on
 ```
 
+### 第三方管理工具
+
+`gvm` 是第三方开发的管理工具
+
+```bash
+gvm install go1.14.7
+gvm use go1.14.7
+```
+
 ### 配置
 
 ```bash
-go env -w GOPROXY=https://goproxy.io,direct
+go env -w GOPROXY=https://goproxy.io,direct  // 公共模块代理
+GOPRIVATE=git.xxx.com // 私有模块代理
 ```
+
+##### 常用命令
+
+- `go mod init [module]`
+    - 初始化
+- `go mod tidy`
+    - 检测和清理依赖
+- `go get -v github.com/go-ego/gse@v0.60.0-rc4.2`
+    - 安装指定包
+- `go get -u`
+    - 更新依赖
+- `go mod download`
+    - 下载依赖文件
+- `go build`
+    - 编译代码，会同时编译与之相关联的包
+- `go clean`
+    - 移除当前源码包和关联源码包里面编译生成的文件
+- `go fmt`
+    - 格式化
 
 ### 常用工具
 
@@ -52,6 +81,8 @@ go env -w GOPROXY=https://goproxy.io,direct
 - `go test`
 
 ### 简单语法
+
+每个 `go` 程序至少包括三个部分， `package main`，`import`，`func main()`, `main` 方法必须定义在 `main` 包里面
 
 ```go
 package main // 包声明, `pange main` 表明是一个独立执行的程序
@@ -187,143 +218,6 @@ func main() {
         - 十进制小数
     - `%s`
         - 字符串
-- 结构体
-    - 结构体之间可以相互赋值，是浅拷贝，拷贝的是指针地址
-    - 内嵌结构体不提供名称，直接继承其内部所有的字段和方法
-    - 如果内嵌结构体和外部结构体字段系统，先要使用内嵌结构体需要外部调用申明内嵌结构体
-    - 结构体标签
-        - 附属于字段的字符串，辅助序列化
-    - 结构体方法
-        - 首字母大写公开方法
-        - 首字母小写内部方法，只有同包可以使用
-    - 结构体指针方法
-        - 值传递涉及到拷贝，无法实际影响外部存储的数据
-
-```go
-type struct_variable_type struct {
-member definition
-}
-
-var_name := struct_variable_type{value1, value2, ...}
-
-type Book struct {
-title string
-author string
-subject string
-book_id int
-}
-
-func main() {
-Book{
-title: "Go"
-author: "XYZ"
-subject: "Go Programming"
-book_id: 6495407,
-}
-Book{"Go Programming", "XYZ", "Go Programming Tutorial", 6495407}
-
-var c Book = Book{} // 零值结构体会占用内存，只不过里面的每个字段都是零值
-var c Book
-var c  *Book = new(Book) // 返回的是指针类型，这个零值只会占用一个指针
-
-type Teacher struct {
-name string
-age int
-title string
-}
-
-
-type Course struct {
-Teacher // 内嵌结构体不提供名称，直接继承其内部所有的字段和方法；如果内嵌结构体和外部结构体字段系统，先要使用内嵌结构体需要外部调用申明内嵌结构体
-price int
-name string
-url string
-}
-
-type Info struct {
-Name string
-Age  int `json:"age,omitempty"`
-Sex  string
-}
-
-func (i Info) GetInfo() float64 {
-return ""
-}
-
-func (i Info) expand() {
-i.Age *= 2
-}
-
-}
-```
-
-- 并发
-    - 使用 `goroutines` 和 `channels` 来实现
-        - `goroutines`
-            - 并发执行单位，类似线程
-            - 用户无需手动创建
-            - `go` 关键字启动
-            - 非阻塞的，同时可以有大量的运行
-          > 同一程序中的所有 `goroutine` 共享同一内存地址
-          ```go
-            go func(param_list)
-          ```
-        - `channel`
-            - 用于再 `goroutines` 中通讯
-            - 支持同步和数据共享，避免显式的锁机制
-            - `chan` 关键字创建，`<-` 操作符发送和接收数据
-          ```go
-            ch <- v // 把 v 发送给通道 ch
-            v := <- ch // 从 cha 接收数据，并把值赋值给 v
-    
-          ```
-        - 通道缓冲区
-          ```go
-            ch := make(chan int, 100) // 第二个参数为指定缓冲区大小
-          ```
-            - 带缓冲区的通道允许发送和接收数据处于异步状态。如果缓冲区已满，发送操作将阻塞，直到有空间。
-        - `select`
-          ```go
-            func test (c, quit chan int) {
-                x, y := 0, 1
-                for {
-                select {
-                    case c <- x:
-                        x, y = y, x+y
-                    case <-quit:
-                        fmt.Println("quit")
-                        return
-                }
-            }
-          }
-          ```
-        - `waitgroup`
-            - 用于等待多个`goroutines`执行完成
-          ```go
-            func worker(id int, wg *sync.WaitGroup) {
-                defer wg.Done()
-                fmt.Println("Worker", id)
-            }
-            func main() {
-                var  wg sync.WaitGroup
-          
-                for i := 1; i <= 3; i++ {
-                    wg.Add(1)
-                    go worker(i, &wg)
-                }
-          
-                wg.Wait()
-            }
-          ```
-        - `context` 控制生命周期
-            - `context.withCancel`
-            - `context.withTimeout`
-        - `Mutex` 互斥锁，保护共享资源
-        - `Scheduler`
-            - `Go` 基于 `GMP` 模型，调度器将 `goroutines` 分配到系统线程中执行，通过 `M`, `P` 配合高效管理并发
-            - `Goroutines`
-            - `Machine` 系统线程
-            - `Processor` 逻辑处理器
 
 ### 模块
 
@@ -344,9 +238,20 @@ i.Age *= 2
         - 为了编译 `A`，编译器读取 `B`
 - 别名
     - `import fm "fmt"`
+- 匿名包
+    - 主要是为了执行它的 `init` 函数，数据库的一些初始化
+    - 可能执行一些副作用操作，自动注册或者初始化全局变量
 - 作用范围
     - 导入包之后，这些对象在本包的作用域内都是全局的
     - 可见性当标识符以一个大写字母开头就可以被外部包的代码使用，如果小写字母开头对外部不可见
+
+```go
+import (
+"fmt"
+m "math"      // 给math包起一个别名 m
+_ "math/rand" // 匿名包，主要用于引入一些驱动的init函数的初始化
+)
+```
 
 ##### 标准库
 
@@ -359,12 +264,16 @@ i.Age *= 2
 
 ### 函数
 
+基本的代码块，用于执行某些操作并返回结果
+
+- 匿名函数
+    - 没有名称的函数，可以直接定义在函数体内
 - `main()` 函数
     - 一个可执行程序必须包含的，没有的话会引发构建错误
-    - 如果有 `init()` 先执行
-        - 主要用来初始化变量
-        - 当一个程序开始之前调用后台执行的 `goroutine`
     - 没有参数也没有返回值，添加构建失败
+- `init()`
+    - 特殊函数，用于程序执行前自动执行一些初始化的操作，没有参数和返回值，不能被显式的调用
+    - 程序启动时 `Go` 会自动在主函数执行之前调用所有 `init`
 - 用法规范
     - 只有当某个函数需要被外部包调用的时候才使用大写字母开头
 
@@ -496,14 +405,14 @@ func callback(y int, f func(int, int)) {
 
 ##### 闭包
 
-不希望给函数起名字可以使用匿名函数，这样的函数无法独立存在，可以被赋值给某个变量，再通过函数名对函数进行调用
-使得一些函数捕获到一些外部的状态
+闭包简单来说是一种引用了外部变量的匿名函数，它可以访问外部作用域中的变量，即使外部作用域被销毁
+闭包 = 匿名函数 + 引用环境
+闭包把匿名函数和运行时的引用环境打包成一个新的整体，每次调用闭包时都会返回一个新的闭包实例，实例之间相互隔离
 
-- 将函数作为返回值
-- 调试
-    - `runtime`
-        - `Caller`
-            - 需要的地方实现一个 `where` 的闭包函数打印函数执行
+- 函数工厂
+- 延迟计算
+- 递归
+- 闭包会访问外部作用域中的变量，需要避免并发访问和变量泄露
 
 ```go
 func() {
@@ -552,15 +461,38 @@ var a IZ = 5
 b := int(a)
 ```
 
-### 常量
+### 变量和常量
 
-常量的值必须是在编译的时候就能确定的，编译期间自定义函数无法使用，内置函数可以使用
+变量和常量简单来说就是给内存中某一个地址起一个名字, 然后用这个地址存储某个特定类型的值
 
-- 作用域
-    - 变量在函数体外则被认为是全局变量
-    - 可以在内层代码块里面使用同名的变量，外部变量会暂时隐藏
-- 编译
-    - 变量可以在编译期间就赋值
+- 变量
+    - 变量定义在函数外，当作该 `package` 下的全局变量
+    - 定义在函数内，为局部变量
+- 常量
+    - 定义在函数外，该包下全局变量
+    - 常量定义时必须赋值，定义之后不能被修改
+- 函数变量
+    - 函数可以像普通类型一样被声明和使用，一个函数赋值给一个变量，也可以将函数作为另一个函数的参数或返回值
+- 指针变量
+- 占位符
+    - %d 十进制表示
+
+```go
+var variableName int // 定义int类型的变量,初始化为零值
+variableName := 1    // 定义int类型的变量,初始化为 1
+
+// 其它方式
+var variableName int = 1
+var variableName = 1
+
+const constantName = valueA
+const constantName T = value
+
+var variableName *T    //定义一个指针变量, 默认值为nil。
+variableName := &Value //通过简单语句定义一个指针变量并赋默认值(&Value代表取Value值的地址)。
+variableName := new(T) //通过内置函数new()初始化指针变量，会默认分配一个地址,并存储对应类型的零值。
+
+```
 
 ### 基本数据类型
 
@@ -643,6 +575,8 @@ b := int(a)
     - `select`
         - 只能用于通道操作，每个 `case` 必须是通道
         - 如果多个通道都准备好了，会随机选择一个通道执行
+    - `range`
+        - 遍历字符串数组切片和映射
 
 ##### `if-else`
 
@@ -743,8 +677,10 @@ for key, value := range map1 {
 
 ### 结构体
 
-`*` 选择器用来引用结构体字段
+将多个字段组合，形成一个结构体类型，封装多个相关字段，方便操作和管理
 
+- 访问
+    - 创建结构体变量之后，我们可以通过 `.` 运算符来修改和访问结构体的数据字段
 - 混合字面量
     - 值的顺序必须按照字段顺序来写
 - 结构体中所有的数据都是存储在连续的内存中的
@@ -754,6 +690,7 @@ for key, value := range map1 {
         - 使用可见性原则，结构体开头字母小写
 - 标签
     - 结构体中的字段除了有名字和类型外，还可以有一个可选的标签
+    - 用来指定某些字段的元数据信息，通常使用 `key:value` 的格式，多个 `tag` 之间使用空格分隔
 - 匿名字段
     - 字段没有显式的名字，只有字段类型是必须的
     - 匿名字段可以是结构体类型
@@ -836,6 +773,16 @@ runtime.SetFinalizer(obj, func (obj *typeObj))
 
 定义一组方法的集合不包含代码实现，接口里面包含变量
 
+- 接口可以存储任意类型的值
+    - 在 `Go` 的 `runtime` 中，`inferface` 是用两个指针来实现 `eface`
+  ```go
+    - 当一个接口变量被赋值的时候，`Go` 会在运行时分配一个包含两个指针的结构体2
+    type eface struct {
+	    _type *_type // 指向实际类型信息
+	    data  unsafe.Pointer // 指向实际存储数据
+    }
+
+  ```
 - 只包含一个方法的接口一般使用方法名加 `er` 后缀组成
 - 不常用的接口以 `able` 结尾
 - 接口可以有值
@@ -1097,9 +1044,74 @@ fn(a, b)
     - `func TestAbcde(t *testing.T)`
         - `T` 是传递给测试函数的结构体类型，用来管理测试状态，支持格式化测试日志
         - 函数结尾把输出的和想要的结果对比，如果不等于就打印一个错误
+- 测试代码
+    - 使用 `t.Error` 或 `t.Fail` 等函数来报告测试失败的结果
+- 子测试
+  - 一个测试函数可以构建多个子测试，每个子测试都独立运行，使用 `t.Run` 来创建子测试
+- 表驱动测试
+  - 使用表格驱动测试来测试多组输入和输出，创建一个包含输入和预期输出的表格，然后使用 `for` 循环来测试每个输入和输出
+- 测试覆盖率
+  - `go test -cover`
+- 基准测试
+  - `tesing.benchmark`
 
 ```go
-func TestAbcde(t *testing.T)
+func TestAdd(t *testing.T) {
+t.Run("test case 1", func (t *testing.T) {
+result := Add(1, 2)
+expected := 3
+if result != expected {
+t.Errorf("add(1, 2) returned %d, expected %d", result, expected)
+}
+})
+}
+
+
+func TestAdd(t *testing.T) {
+type args struct {
+a int
+b int
+}
+
+tests := []struct { // 表格 包含(测试名称，参数，期望值)
+name string
+args args
+want int
+}{
+{
+"1+2",
+args{
+a: 1,
+b: 2,
+},
+3,
+},
+{
+"10+10",
+args{
+a: 10,
+b: 10,
+},
+20,
+},
+{
+"15+15",
+args{
+a: 15,
+b: 15,
+},
+31,
+},
+}
+for _, tt := range tests { // 循环tests表格
+t.Run(tt.name, func (t *testing.T) { // 通过子测试运行
+if got := add(tt.args.a, tt.args.b); got != tt.want {
+t.Errorf("add() = %v, want %v", got, tt.want)
+}
+})
+}
+}
+
 ```
 
 ### 协程与通道
@@ -1111,25 +1123,75 @@ func TestAbcde(t *testing.T)
     - 所有协程都会共享同一个线程，除非该值设置大于 `1`
     - 会有一个线程池管理许多线程，线程会被分散到多个处理器上，处理器多不一定提升性能
 
+##### 协程
+
+- 启动并发
+    - `go + 函数实现`
+    - `go` 关键字将函数打包成一个任务，然后提交给 `Golang` 的并发器
+- `WaitGroup`
+    - 我们不知道一个 `Goroutine` 什么时候结束，因此我们需要等待执行结束
+    - `sync.WaitGroup` 是用于并发控制的结构体，它可以用于等待一组 `Goroutine` 的完成
+    - `Add(n int)`
+        - 向 `WaitGroup` 添加 `n` 个任务
+    - `Done()`
+        - 表示一个等待的任务完成，`WaitGroup` 的计数器减一
+    - `Wait()`
+        - 等待所有添加的任务全部完成
+- 并发安全
+    - 当多个任务并发修改同一个变量会引发安全问题
+    - `sync` 包提供了一些同步机制，如 `Mutex` 和 `RWMutex`
+
+```go
+go func () {}
+
+func main () {
+var wg sync.WaitGroup
+
+wg.Add(2) // 设置需要等待 goroutine 的数量,目前为2
+
+go listLanguage(language, &wg) // 通过 goroutine 启动该函数
+
+go func () { // 建议使用方式
+defer wg.Done() // 程序运行完毕, 将等待数量减1
+listTutorial(tutorial)
+}()
+
+wg.Wait() // 当等待数量为0后执行下一行
+}
+```
+
+```mermaid
+flowchart TD
+    A --> B[从内存中加载 Count 值到寄存器]
+    B --> C[CPU中断]
+    C --> D[Count++]
+    D --> E[将 Count 写回内存]
+    B1 --> E1[从内存中加载 Count 值到寄存器]
+    C --> E1
+    E1 --> F[Count++]
+    F --> G[将 Count 写回内存]
+    G -- > H [ 程序运行完毕 ]
+H --> D
+```
+
 ##### 通信
 
 协程之间可以使用共享变量来进行通讯，但是会给所有的共享内存的多线程都带来困难
 通道是专门用来负责协程之间的通讯的，从而避开共享内存带来的问题；指定时间内只有一个协程可以对其访问，所以不会发生数据竞争问题
 
-
 - 通道实际上是先进先出的消息队列
 - 引用类型
 - `<-` 通信操作符
-  - 信息按照箭头方向流动
+    - 信息按照箭头方向流动
 - 两个携程之间需要通讯，必须给它们同一个通道作为参数
 - 默认情况下，通信是同步且无缓冲的
 - 无缓冲通道
-  - 可以在两端相互阻塞对方，形成死锁
+    - 可以在两端相互阻塞对方，形成死锁
 - 使用带缓存的通道
 - 信号量模式
-  - 协程通过在通道里面放一个值来结束信号
+    - 协程通过在通道里面放一个值来结束信号
 - 关闭通道
-  - 可以被显示的关闭
+    - 可以被显示的关闭
 - `select` 切换携程
 
 ```go
