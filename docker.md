@@ -1,151 +1,114 @@
-# VM
-
-### 虚拟机网络
-
-虚拟机的网络配置是通过虚拟网络适配器来实现的，这些适配器模拟物理网络接口卡
-
-三种模式
-
-- 桥接
-    - 虚拟机可以直接连接到宿主机所在的物理网络中
-    - 该模式下虚拟机和宿主机有同等地位，可以各自独立获取 `IP` 地址
-- `NAT`
-    - 多个虚拟机共享宿主机的一个 `IP` 地址来访问外部网络，外部只能看到宿主机，不知道虚拟机的存在
-    - 双向通讯限制
-- 仅主机
-    - 创建一个完全隔离的私有网络环境，只有宿主机和在这个模式下的虚拟机可以相互通信
-
-##### 虚拟机网络配置
-
-新安装完成的 `Centos7` 无法访问网络
-
-```bash
-vim /etc/sysconfig/network-scripts/ifcfg-ens33
-ONBOOT=yes
-service network restart
-```
-
-修改为国内镜像源
-
-```bash
-cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
-vim /etc/yum.repos.d/CentOS-Base.repo
-
-""""
-# CentOS-Base.repo
-#
-# The mirror system uses the connecting IP address of the client and the
-# update status of each mirror to pick mirrors that are updated to and
-# geographically close to the client.  You should use this for CentOS updates
-# unless you are manually picking other mirrors.
-#
-# If the mirrorlist= does not work for you, as a fall back you can try the 
-# remarked out baseurl= line instead.
-#
-#
- 
-[base]
-name=CentOS-$releasever - Base - mirrors.aliyun.com
-failovermethod=priority
-baseurl=http://mirrors.aliyun.com/centos/$releasever/os/$basearch/
-        http://mirrors.aliyuncs.com/centos/$releasever/os/$basearch/
-        http://mirrors.cloud.aliyuncs.com/centos/$releasever/os/$basearch/
-gpgcheck=1
-gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
- 
-#released updates 
-[updates]
-name=CentOS-$releasever - Updates - mirrors.aliyun.com
-failovermethod=priority
-baseurl=http://mirrors.aliyun.com/centos/$releasever/updates/$basearch/
-        http://mirrors.aliyuncs.com/centos/$releasever/updates/$basearch/
-        http://mirrors.cloud.aliyuncs.com/centos/$releasever/updates/$basearch/
-gpgcheck=1
-gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
- 
-#additional packages that may be useful
-[extras]
-name=CentOS-$releasever - Extras - mirrors.aliyun.com
-failovermethod=priority
-baseurl=http://mirrors.aliyun.com/centos/$releasever/extras/$basearch/
-        http://mirrors.aliyuncs.com/centos/$releasever/extras/$basearch/
-        http://mirrors.cloud.aliyuncs.com/centos/$releasever/extras/$basearch/
-gpgcheck=1
-gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
- 
-#additional packages that extend functionality of existing packages
-[centosplus]
-name=CentOS-$releasever - Plus - mirrors.aliyun.com
-failovermethod=priority
-baseurl=http://mirrors.aliyun.com/centos/$releasever/centosplus/$basearch/
-        http://mirrors.aliyuncs.com/centos/$releasever/centosplus/$basearch/
-        http://mirrors.cloud.aliyuncs.com/centos/$releasever/centosplus/$basearch/
-gpgcheck=1
-enabled=0
-gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
- 
-#contrib - packages by Centos Users
-[contrib]
-name=CentOS-$releasever - Contrib - mirrors.aliyun.com
-failovermethod=priority
-baseurl=http://mirrors.aliyun.com/centos/$releasever/contrib/$basearch/
-        http://mirrors.aliyuncs.com/centos/$releasever/contrib/$basearch/
-        http://mirrors.cloud.aliyuncs.com/centos/$releasever/contrib/$basearch/
-gpgcheck=1
-enabled=0
-gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
-
-""""
-yum clean all
-yum makecache
-
-```
-
-安装 miniconda
-
-```bash
-yum -y install bzip2
-wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda-3.10.1-Linux-x86_64.sh
-bash Miniconda-3.10.1-Linux-x86_64.sh
-
-conda info # 查看镜像源
-conda config --remove channels http://mirrors.aliyun.com/anaconda/pkgs/main --force
-conda config --add channels http://mirrors.aliyun.com/anaconda/cloud
-conda config --set show_channel_urls yes
-```
-
-安装 docker & docker compose
-
-```bash
-curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
-systemctl start docker #启动docker
-systemctl enable docker
-
-yum install -y  docker-compose-plugin
-```
-
-##### 虚拟机扩容
-
-1. 关闭虚拟机
-2. 硬盘扩展
-3. 启动虚拟机查看磁盘信息
-4. `fdisk -l` 查看磁盘
-5. `fdisk /etc/sda` 回车；`w` 写入
-6. 修改新分区 `id` 到 `LVM id`
-    - `fdisk /dev/sda`
-    - `t;id;l;lvm_id;w`
-    - 重启
-7. 扩容分区
-    - `lvs` 查看逻辑卷
-    - `vgdisplay` 显示卷组信息
-    - `pvcreate /dev/sda3` 物理硬盘初始化为物理卷
-    - `vgextend centos /dev/sda3` 扩展卷
-8. 扩充逻辑卷
-    - `lvextend -L+100G /dev/centos/root /dev/sda3`
-9. 重设逻辑卷大小
-    - `xfs_growfs /dev/centos/root`
-
 # Docker
+
+轻量化容器结构，一个应用一个容器
+
+### 技术实现
+
+- 命名空间
+    - 软件资源的隔离
+    - 在 `Linux` 中命名空间是一种内核特性，用于隔离系统资源，使得各个进程互不干扰
+- 控制组
+    - 主要负责硬件资源的隔离
+    - `CPU` 内存等资源限制，资源优先级
+- 联合文件系统
+    - 允许多个文件挂载到一个单一的目录结构中
+    - 层叠结构，通过将多个文件系统层叠在一起，形成一个同一的目录读写权限可以单独设置
+
+### 基本组件
+
+- 镜像
+    - 只读文件包，虚拟环境运行最原始的文件系统
+    - 增量式的镜像结构，本质上镜像是无法修改的
+- 容器
+    - 隔离出来的虚拟环境
+- 网络
+    - 可以容器间建立虚拟局域网
+    - 建立独立的域名解析环境
+- 数据卷
+    - 除了挂载目录还可以使用目录持久化数据
+    - 容器间共享数据
+- `Docker Engine`
+    - `docker daemon`
+        - 容器管理
+        - 应用编排
+        - 镜像分发
+    - `docker CLI`
+        - 对外暴露接口可以操作 `docker daemon`
+
+##### 镜像
+
+镜像由不同的镜像层组成，每一个镜像层都拥有唯一 `Hash` 编码，允许在镜像之间共享镜像层
+
+- `docker inspect`
+    - 获取镜像的详细信息
+- `docker commit -m "Configured" webapp`
+    - 提交容器更改，需要先暂停容器运行
+- `docker save webapp:1.0 > webapp-1.0.tar`
+    - 保存镜像
+- `docker load < webapp-1.0.tar`
+    - 导入镜像
+
+##### 容器
+
+- 主进程
+    - 容器的生命周期和容器中 `PID` 为 1 的进程一致
+- 写时复制
+    - 允许多个容器共享相同的基础镜像，只有对数据进行修改的时候才会创建新的副本
+- `docker attach`
+    - 连接一个正在运行的容器的标准输入输出
+
+网络配置
+
+- 沙盒
+    - 为每个容器创建一个独立的网络
+- 网络
+- 端点
+    - 容器在网络中的连接点
+
+网络驱动
+
+- `bridge`
+    - 默认
+    - 创建时如果不指定网络都会连接到此处
+- `host`
+- `overlay`
+    - 跨物理机的虚拟网络
+- `macvlan`
+- `none`
+- 创建网络
+    - `docker network create -d` 指定驱动类型，默认 `bridge`
+
+容器互联
+
+- 创建容器的时候使用 `--link`
+- 容器处在不同网络无法互联
+
+端口
+
+- 端口暴露
+    - 只有容器自身允许的端口才能被其他容器访问
+- 端口映射
+
+##### 数据管理
+
+沙盒文件系统数据无法持久化；容器隔离使得内外数据很难流通
+
+文件挂载
+
+- `Bind Mount`
+    - 将宿主机操作系统中的目录和文件挂载到容器内，容器内外对文件读写互相可见
+- `Volume`
+    - 宿主机挂载目录到容器，由 `Docker` 管理
+    - 数据卷命名唯一，可以多个容器共享
+- `Tmpfs`
+    - 挂载系统内存到容器
+- 数据卷容器
+    - 没有具体的应用不需要允许，为了定义一个或者多个数据卷并持有它们的引用
+- 备份迁移数据卷
+    - `> docker run --rm --volumes-from appdata -v /backup:/backup ubuntu tar cvf /backup/backup.tar /webapp/storage`
+    - `> docker run --rm --volumes-from appdata -v /backup:/backup ubuntu tar xvf /backup/backup.tar -C /webapp/storage --strip`
+    - 创建一个打包文件的目录 `/backup`
+    - 创建一个临时容器挂载备份目录和数据卷
 
 ### Centos 7
 
@@ -577,81 +540,3 @@ CACHES = {
 }
 ```
 
-# `K8S`
-
-### 安装
-
-##### `minikube`
-
-```bash
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64
-sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
-```
-
-##### `kubectl`
-
-```bash
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-```
-
-##### 配置
-
-```bash
-systemctl stop firewalld
-systemctl disable firewalld
-
-sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config
-setenforce 0
-
-swapoff -a  # 临时关闭
-
-cat /etc/fstab 注释到swap那一行 # 永久关闭
-
-sed -i 's/.*swap.*/#&/g' /etc/fstab
-
-yum install ntpdate -y
-ntpdate  ntp.api.bz
-```
-
-# 网络
-
-数据包传输流程
-- 发送数据
-- 查找路由表
-- 查 `ARP` 表
-  - 下一步的 `MAC` 地址
-- 查转发表
-  - 实际发送数据
-
-- `MAC` 地址表
-  - 二层交换机为主，查询目的 `MAC` 地址对应的接口
-  - 只负责本地局域网转发
-  - 场景
-    - 局域网内 `ping`，决定帧从哪个接口出去
-    - `Mac` 绑定安全策略
-  - 无法解析 `IP`
-- `APR`
-  - 三层接口有 `IP` 的设备，去找和 `MAC` 对饮的 `IP`
-  - 知道 `IP` 包，但是不知道下一步 `MAC` 地址
-  - 场景
-    - 不同 `VLAN` 间通信
-  - `ARP` 表中的 `MAC`，不代表一定在 `MAC` 表里面，需要交换机也见过这个 `MAC`
-- 路由表
-  - 三层交换机或者路由器，目的 `IP` 应该往哪里走
-  - 不看 `MAC`，看 `IP` 决定转发的方向
-  - 场景
-    - `VLAN` 间通讯
-    - 外网
-  - 只提供方向，不会实际发送
-- 转发表
-  - 所有有转发能力的设备，把数据真正送出去
-
-- 问题排查
-  - 本地 `ping` 不同
-    - `MAC` + `ARP`
-  - `VLAN` 间通讯
-    - 路由 + `ARP`
-  - 默认路由没出去
-    - 路由 + 转发表
-  - 两台电脑互通无法转发
-    - `MAC` 表
