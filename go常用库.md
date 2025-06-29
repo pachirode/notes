@@ -398,6 +398,25 @@ return
 
 ```
 
+##### 添加中间件
+
+`web` 中间件是 `HTTP/RPC` 请求必经的一个中间层，该中间层可以统一的处理所有的请求，起到前拦截和后拦截的效果
+中间件常用于权限验证，日志记录，数据过滤等场景
+
+- 分类
+    - 全局中间件
+        - 通过默认路由来设置全局路由
+        - `r.Use`
+    - 路由组中间件
+        - 声明路由组的同时设置路由中间件
+            - `authorized := r.Group("/users", AuthRequired())`
+        - 先声明路由组然后在 `Use` 方法进行设置
+            - `authorized := r.Group("/users")`
+            - `authorized.Use(AuthRequired())`
+    - 单个路由中间件
+        - 仅对一个路由起作用
+        - `r.GET("/users/:id", GetUser())`
+
 ### `log` 标准库
 
 使用需要创建一个 `*log.Logger` 类型的实例，所有的日志输出都是通过它实现的，提供全局变量 `std`
@@ -588,4 +607,94 @@ type Config struct {
 	InitialFields     map[string]interface{}
 }
 
+```
+
+### `Copier`
+
+- 标签使用
+    - `copier:"-"`
+        - 复制阶段忽略掉该字段
+    - `copier:"must"`
+        - 强制复制字段，无法复制直接报错
+    - `copier:"must,nopanic"`
+- 指定自定义字段名字
+
+```bash
+go get -u github.com/jinzhu/copier
+```
+
+```go
+type SourceEmployee struct {
+Identifier int64
+}
+
+type TargetWorker struct {
+ID int64 `copier:"Identifier"` // Map Identifier from SourceEmployee to ID in TargetWorker
+}
+```
+
+### `casbin`
+
+- `RBAC` 权限控制，将访问模型抽象到一个基于 `PERM` 模型文件中
+    - 支持同时有多个 `RBAC` 系统
+    - 支持多层角色，权限关系可以依次传递
+- `ACL`
+    - 模型在用户和资源都比较少的情况下没什么问题，一旦用户和资源量一大操作就会变得比较繁琐
+- `ABAC`
+    - 应对特殊的动态的需求
+        - 工作时间可以读写数据
+
+- 模型文件
+    - `policy`
+    - `request`
+        - 对访问请求的抽象
+    - `matcher`
+        - 请求和定义进行匹配，生成结果集
+    - `effect`
+        - 根据结果集，决定如何处理请求
+
+##### 模型文件
+
+```txt
+[request_definition]
+r = sub, obj, act
+
+[policy_definition]
+p = sub, obj, act
+p2 = sub, act
+
+[policy_effect]
+e = some(where (p.eft == allow)) # 满足任意一条规则及成立
+
+[matchers]
+m = r.sub == p.sub && r.obj == p.obj && r.act == p.act
+
+[role_definition]
+g = _, _
+g2 = _, _
+g3 = _, _, _ # 用户，角色，域
+```
+
+```mermaid
+flowchart LR
+    Request --> Matcher_exp1
+    Policy1 --> Matcher_exp1
+    Matcher_exp1 --> Policy1_Effect
+    Policy1_Effect --> Effect_expression
+    Effect_expression --> Result
+    Request --> Matcher_exp2
+    Policy2 --> Matcher_exp2
+    Matcher_exp2 --> Policy2_Effect
+    Policy2_Effect --> Effect_expression
+```
+
+# 其他工具
+
+### `db2struct`
+
+```bash
+git clone https://github.com/Shelnutt2/db2struct.git
+go build -v -o db2struct cmd/db2struct/main.go
+
+db2struct --gorm --no-json -H 127.0.0.1 -d miniblog -t user --package model --struct UserM -u miniblog -p 'miniblog1234' --target=user.go
 ```
