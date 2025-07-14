@@ -69,6 +69,7 @@ git config --global core.longpaths true
 ```
 
 ### `go`
+
 ```bash
 wget -P /tmp/ https://go.dev/dl/go1.19.4.linux-amd64.tar.gz
 mkdir -p $HOME/go
@@ -88,8 +89,8 @@ export GOSUMDB=off # 关闭校验 Go 依赖包的哈希值
 EOF
 ```
 
-
 ### `neovim`
+
 ```bash
 tar xzvf nvim-linux-x86_64.tar.gz
 cp bin/nvim /usr/bin/nvim
@@ -121,4 +122,28 @@ sudo make altinstall #使用 altinstall 而不是 install，是为了避免覆�
 python3.10 -m pip install --user pynvim
 ```
 
+### `nerd-fonts`
+
+```bash
+sudo dnf install fontconfig
+mkdir -p ~/.local/share/fonts
+cd ~/.local/share/fonts && curl -fLO https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/DroidSansMono/DroidSansMNerdFont-Regular.otf
+fc-cache -fv
+```
+
 ### `fzf`
+
+```bash
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install
+fzf --zsh > fzf.zsh
+```
+
+### `zsh`
+
+```bash
+sudo yum install autoconf zsh 
+chsh -s $(which zsh)
+sudo usermod -s /bin/bash your_username
+curl -fsSL https://raw.githubusercontent.com/zimfw/install/master/install.zsh | zsh
+```
